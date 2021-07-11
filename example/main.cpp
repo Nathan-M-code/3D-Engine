@@ -2,7 +2,7 @@
 // Created by natha on 10/07/2021.
 //
 
-#include "E3D_app_base.hpp"
+#include "App_base.hpp"
 
 // std
 #include <cstdlib>
@@ -10,7 +10,7 @@
 #include <stdexcept>
 
 int main() {
-    E3D::E3DAppBase app{};
+    AppBase app{};
 
     try {
         app.run();

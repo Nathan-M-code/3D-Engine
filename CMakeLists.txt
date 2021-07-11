@@ -42,14 +42,8 @@ endif()
 if(WIN32)
     source_group("include" REGULAR_EXPRESSION "include/*")
     source_group("source" REGULAR_EXPRESSION "source/*")
+    source_group("example" REGULAR_EXPRESSION "example/*")
 endif(WIN32)
-
-# Define include path
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-# Gather list of header and source files for compilation
-file(GLOB_RECURSE CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
-file(GLOB_RECURSE HPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/*.*)
 
 #glfw ATTENTION need 32 bits bin
 include_directories("C:/Users/natha/Desktop/dev/Bibliotheque/glfw-3.3.2.bin.WIN32/include")
@@ -58,11 +52,22 @@ link_directories("C:/Users/natha/Desktop/dev/Bibliotheque/glfw-3.3.2.bin.WIN32/l
 #glm headers only its simple
 include_directories("C:/Users/natha/Desktop/dev/Bibliotheque/glm-0.9.9.8")
 
+# Define include path
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/example)
+
+# Gather list of header and source files for compilation
+file(GLOB_RECURSE CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
+file(GLOB_RECURSE HPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/*.*)
+file(GLOB_RECURSE EXAMPLE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/example/*.*)
+
 # Build project, give it a name and includes list of file to be compiled
-add_executable(${Recipe_Name} ${CPP_FILES} ${HPP_FILES})
+add_executable(${Recipe_Name} ${CPP_FILES} ${HPP_FILES} ${EXAMPLE_FILES})
 
 # Link the debug and release libraries to the project
 target_link_libraries( ${Recipe_Name} ${VULKAN_LIB_LIST} glfw3)
+
+message("apres linking")
 
 # Define project properties
 set_property(TARGET ${Recipe_Name} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/binaries)
