@@ -4,177 +4,103 @@
 
 #include "App_base.hpp"
 
+// libs
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+
 using namespace E3D;
 using namespace std;
 
+
 AppBase::AppBase() {
-    loadModels();
-    createPipelineLayout();
-    recreateSwapChain();
-    createCommandBuffers();
+    loadGameObjects();
 }
 
-AppBase::~AppBase() { vkDestroyPipelineLayout(m_device.device(), m_vkPipelineLayout, nullptr); }
+AppBase::~AppBase() {}
 
 void AppBase::run() {
+    SimpleRenderSystem simpleRenderSystem{m_device, m_renderer.getSwapChainRenderPass()};
+
     while (!m_window.shouldClose()) {
         glfwPollEvents();
-        drawFrame();
-    }
 
-    vkDeviceWaitIdle(m_device.device());
-}
-
-void AppBase::loadModels() {
-    std::vector<Model::Vertex> vertices{
-        {{0.0f, -0.5f}, {1.0,0.0,0.0}},
-        {{0.5f, 0.5f}, {0.0,1.0,0.0}},
-        {{-0.5f, 0.5f}, {0.0,0.0,1.0}}
-    };
-    m_model = std::make_unique<Model>(m_device, vertices);
-}
-
-void AppBase::createPipelineLayout() {
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pSetLayouts = nullptr;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
-    if (vkCreatePipelineLayout(m_device.device(), &pipelineLayoutInfo, nullptr, &m_vkPipelineLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
-}
-
-void AppBase::createPipeline() {
-    assert(lveSwapChain != nullptr && "Cannot create pipeline before swap chain");
-    assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
-
-    PipelineConfigInfo pipelineConfig{};
-    Pipeline::defaultPipelineConfigInfo(pipelineConfig);
-    pipelineConfig.renderPass = m_swapChain->getRenderPass();
-    pipelineConfig.pipelineLayout = m_vkPipelineLayout;
-    m_pipeLine = std::make_unique<Pipeline>(
-            m_device,
-            "shaders/simple_shader.vert.spv",
-            "shaders/simple_shader.frag.spv",
-            pipelineConfig);
-}
-
-void AppBase::createCommandBuffers() {
-    m_commandBuffers.resize(m_swapChain->imageCount());
-
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = m_device.getCommandPool();
-    allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
-
-    if (vkAllocateCommandBuffers(m_device.device(), &allocInfo, m_commandBuffers.data()) !=
-        VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
-    }
-}
-
-
-void AppBase::freeCommandBuffers() {
-    vkFreeCommandBuffers(
-            m_device.device(),
-            m_device.getCommandPool(),
-            static_cast<uint32_t>(m_commandBuffers.size()),
-            m_commandBuffers.data());
-    m_commandBuffers.clear();
-}
-
-void AppBase::recreateSwapChain(){
-    auto extent = m_window.getExtent();
-    while (extent.width == 0 || extent.height == 0) {
-        extent = m_window.getExtent();
-        glfwWaitEvents();
-    }
-    vkDeviceWaitIdle(m_device.device());
-
-    if (m_swapChain == nullptr) {
-        m_swapChain = std::make_unique<SwapChain>(m_device, extent);
-    } else {
-        m_swapChain = std::make_unique<SwapChain>(m_device, extent, std::move(m_swapChain));
-        if (m_swapChain->imageCount() != m_commandBuffers.size()) {
-            freeCommandBuffers();
-            createCommandBuffers();
+        if (auto commandBuffer = m_renderer.beginFrame()) {
+            m_renderer.beginSwapChainRenderPass(commandBuffer);
+            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects);
+            m_renderer.endSwapChainRenderPass(commandBuffer);
+            m_renderer.endFrame();
         }
     }
 
-    createPipeline();
+    vkDeviceWaitIdle(m_device.device());
 }
 
-void AppBase::recordCommandBuffer(int imageIndex){
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+// temporary helper function, creates a 1x1x1 cube centered at offset
+std::unique_ptr<E3D::Model> createCubeModel(E3D::Device& device, glm::vec3 offset) {
+    std::vector<E3D::Model::Vertex> vertices{
+            // left face (white)
+            {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+            {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+            {{-.5f, -.5f, .5f}, {.9f, .9f, .9f}},
+            {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+            {{-.5f, .5f, -.5f}, {.9f, .9f, .9f}},
+            {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
 
-    if (vkBeginCommandBuffer(m_commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
+            // right face (yellow)
+            {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+            {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+            {{.5f, -.5f, .5f}, {.8f, .8f, .1f}},
+            {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+            {{.5f, .5f, -.5f}, {.8f, .8f, .1f}},
+            {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+
+            // top face (orange, remember y axis points down)
+            {{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+            {{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+            {{-.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+            {{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+            {{.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+            {{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+
+            // bottom face (red)
+            {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+            {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+            {{-.5f, .5f, .5f}, {.8f, .1f, .1f}},
+            {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+            {{.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+            {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+
+            // nose face (blue)
+            {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+            {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+            {{-.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+            {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+            {{.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+            {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+
+            // tail face (green)
+            {{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+            {{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+            {{-.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+            {{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+            {{.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+            {{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+
+    };
+    for (auto& v : vertices) {
+        v.position += offset;
     }
-
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_swapChain->getRenderPass();
-    renderPassInfo.framebuffer = m_swapChain->getFrameBuffer(imageIndex);
-
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = m_swapChain->getSwapChainExtent();
-
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-    clearValues[1].depthStencil = {1.0f, 0};
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
-
-    vkCmdBeginRenderPass(m_commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(m_swapChain->getSwapChainExtent().width);
-    viewport.height = static_cast<float>(m_swapChain->getSwapChainExtent().height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    VkRect2D scissor{{0, 0}, m_swapChain->getSwapChainExtent()};
-    vkCmdSetViewport(m_commandBuffers[imageIndex], 0, 1, &viewport);
-    vkCmdSetScissor(m_commandBuffers[imageIndex], 0, 1, &scissor);
-
-    m_pipeLine->bind(m_commandBuffers[imageIndex]);
-    m_model->bind(m_commandBuffers[imageIndex]);
-    m_model->draw(m_commandBuffers[imageIndex]);
-
-    vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
-    if (vkEndCommandBuffer(m_commandBuffers[imageIndex]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
+    return std::make_unique<E3D::Model>(device, vertices);
 }
 
-void AppBase::drawFrame() {
-    uint32_t imageIndex;
-    auto result = m_swapChain->acquireNextImage(&imageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
-        return;
-    }
-
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("failed to acquire swap chain image!");
-    }
-
-    recordCommandBuffer(imageIndex);
-    result = m_swapChain->submitCommandBuffers(&m_commandBuffers[imageIndex], &imageIndex);
-    if(m_window.wasWindowResized()){
-        cout << "WINDOW RESIZED" << endl;
-    }
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_window.wasWindowResized()) {
-        m_window.resetWindowResizedFlag();
-        recreateSwapChain();
-        return;
-    } else if (result != VK_SUCCESS) {
-        throw std::runtime_error("failed to present swap chain image!");
-    }
+void AppBase::loadGameObjects() {
+    std::shared_ptr<E3D::Model> model = createCubeModel(m_device, {.0f, .0f, .0f});
+    auto cube = E3D::GameObject::createGameObject();
+    cube.model = model;
+    cube.transform.translation = {.0f, .0f, .5f};
+    cube.transform.scale = {.5f, .5f, .5f};
+    gameObjects.push_back(std::move(cube));
 }

@@ -5,9 +5,10 @@
 #pragma once
 
 #include "E3D_device.hpp"
-#include "E3D_pipeline.hpp"
-#include "E3D_window.hpp"
-#include "E3D_swap_chain.hpp"
+#include "E3D_game_object.hpp"
+#include "E3D_renderer.hpp"
+
+#include "simple_render_system.hpp"
 
 // std
 #include <memory>
@@ -29,20 +30,11 @@ public:
     void run();
 
 private:
-    void loadModels();
-    void createPipelineLayout();
-    void createPipeline();
-    void createCommandBuffers();
-    void freeCommandBuffers();
-    void drawFrame();
-    void recreateSwapChain();
-    void recordCommandBuffer(int imageIndex);
+    void loadGameObjects();
 
     E3D::Window m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
     E3D::Device m_device{m_window};
-    std::unique_ptr<E3D::SwapChain> m_swapChain;
-    std::unique_ptr<E3D::Pipeline> m_pipeLine;
-    VkPipelineLayout m_vkPipelineLayout;
-    std::vector<VkCommandBuffer> m_commandBuffers;
-    std::unique_ptr<E3D::Model> m_model;
+    E3D::Renderer m_renderer{m_window, m_device};
+
+    std::vector<E3D::GameObject> gameObjects;
 };

@@ -2,6 +2,12 @@
 
 layout (location = 0) in vec3 fragColor;
 
+//push constant
+layout(push_constant) uniform Push {
+    mat4 transform;
+    vec3 color;
+} push;
+
 //declare the output variable
 layout(location = 0) out vec4 outColor;
 
