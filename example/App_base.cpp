@@ -22,13 +22,19 @@ AppBase::~AppBase() {}
 
 void AppBase::run() {
     SimpleRenderSystem simpleRenderSystem{m_device, m_renderer.getSwapChainRenderPass()};
+    E3D::Camera camera{};
+    camera.setViewTarget(glm::vec3(-1.f, -2.f, -2.f), glm::vec3(0.f, 0.f, 2.5f));
 
     while (!m_window.shouldClose()) {
         glfwPollEvents();
 
+        float aspect = m_renderer.getAspectRatio();
+        //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
+        camera.setPerspectiveProjection(glm::radians(60.f), aspect, 0.1f, 10.f);
+
         if (auto commandBuffer = m_renderer.beginFrame()) {
             m_renderer.beginSwapChainRenderPass(commandBuffer);
-            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects);
+            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects, camera);
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();
         }
@@ -100,7 +106,7 @@ void AppBase::loadGameObjects() {
     std::shared_ptr<E3D::Model> model = createCubeModel(m_device, {.0f, .0f, .0f});
     auto cube = E3D::GameObject::createGameObject();
     cube.model = model;
-    cube.transform.translation = {.0f, .0f, .5f};
+    cube.transform.translation = {.0f, .0f, 2.5f};
     cube.transform.scale = {.5f, .5f, .5f};
     gameObjects.push_back(std::move(cube));
 }

@@ -7,6 +7,7 @@
 #include "E3D_device.hpp"
 #include "E3D_game_object.hpp"
 #include "E3D_pipeline.hpp"
+#include "E3D_camera.hpp"
 
 // std
 #include <memory>
@@ -21,7 +22,7 @@ namespace E3D {
         SimpleRenderSystem(const SimpleRenderSystem &) = delete;
         SimpleRenderSystem &operator=(const SimpleRenderSystem &) = delete;
 
-        void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<GameObject> &gameObjects);
+        void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<GameObject> &gameObjects, const Camera& camera);
 
     private:
         void createPipelineLayout();
