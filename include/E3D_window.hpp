@@ -30,6 +30,7 @@ namespace E3D {
 
         int getWidth() { return m_width; }
         int getHeight() { return m_height; }
+        GLFWwindow *getGLFWwindow() const { return m_glfwWindow; }
 
         void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
 
