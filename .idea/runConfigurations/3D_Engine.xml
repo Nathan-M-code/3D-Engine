@@ -1,9 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="3D-Engine" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://../" PASS_PARENT_ENVS_2="true" PROJECT_NAME="3D-Engine" TARGET_NAME="3D-Engine" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="3D-Engine" RUN_TARGET_NAME="3D-Engine">
-    <method v="2">
-      <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_compileVert" />
-      <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_compileFrag" />
-      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-    </method>
-  </configuration>
-</component>
